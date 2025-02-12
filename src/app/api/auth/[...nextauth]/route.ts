@@ -1,14 +1,15 @@
 import { NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
+import { SupabaseAdapter } from "@auth/supabase-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaClient } from "@prisma/client"
+import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 import NextAuth from "next-auth/next"
 
-const prisma = new PrismaClient()
-
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: SupabaseAdapter({
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  }),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -21,22 +22,22 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials")
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        })
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', credentials.email)
+          .single()
 
-        if (!user || !user?.password) {
+        if (error || !user) {
           throw new Error("Invalid credentials")
         }
 
-        const isCorrectPassword = await bcrypt.compare(
+        const isValidPassword = await bcrypt.compare(
           credentials.password,
           user.password
         )
 
-        if (!isCorrectPassword) {
+        if (!isValidPassword) {
           throw new Error("Invalid credentials")
         }
 
@@ -47,13 +48,19 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/login',
   },
-  debug: process.env.NODE_ENV === 'development',
-  session: {
-    strategy: "jwt",
+  callbacks: {
+    async session({ session, user }) {
+      if (session?.user) {
+        session.user.id = user.id
+      }
+      return session
+    },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: "jwt"
+  },
+  debug: process.env.NODE_ENV === "development",
 }
 
 const handler = NextAuth(authOptions)
-
 export { handler as GET, handler as POST } 
