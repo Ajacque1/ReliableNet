@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReliableNet</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Welcome to ReliableNet</h1>
+
+    <!-- Speed Test Section -->
+    <section>
+        <h2>Run a Speed Test</h2>
+        <button id="start-test">Run Speed Test</button>
+        <p id="result">Results will appear here...</p>
+    </section>
+
+    <!-- Feedback Form Section -->
+    <section>
+        <h2>Share Your Internet Experience</h2>
+        <form id="feedback-form">
+            <label for="isp">Your ISP:</label>
+            <input type="text" id="isp" name="isp" placeholder="e.g., Comcast" required>
+            <br><br>
+
+            <label for="rating">Satisfaction Rating (1-5):</label>
+            <input type="number" id="rating" name="rating" min="1" max="5" required>
+            <br><br>
+
+            <label for="lag">How often do you experience lag?:</label>
+            <select id="lag" name="lag" required>
+                <option value="rarely">Rarely</option>
+                <option value="sometimes">Sometimes</option>
+                <option value="often">Often</option>
+            </select>
+            <br><br>
+
+            <label for="comments">Additional Comments:</label>
+            <textarea id="comments" name="comments" placeholder="Tell us more..."></textarea>
+            <br><br>
+
+            <button type="submit">Submit Feedback</button>
+        </form>
+        <p id="feedback-response"></p>
+    </section>
+
+    <script>
+        // Speed Test Script
+        document.getElementById('start-test').addEventListener('click', () => {
+            document.getElementById('result').innerText = "Running speed test...";
+
+            fetch('/speedtest')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('result').innerText = `Error: ${data.error}`;
+                    } else {
+                        document.getElementById('result').innerHTML = `
+                            Download Speed: ${data.download_speed} Mbps<br>
+                            Upload Speed: ${data.upload_speed} Mbps<br>
+                            Ping: ${data.ping} ms
+                        `;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('result').innerText = `Error: ${error.message}`;
+                });
+        });
+
+        // Feedback Form Submission
+        document.getElementById('feedback-form').addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent page reload
+            const formData = {
+                isp: document.getElementById('isp').value,
+                rating: document.getElementById('rating').value,
+                lag: document.getElementById('lag').value,
+                comments: document.getElementById('comments').value
+            };
+
+            fetch('/submit-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('feedback-response').innerText = `Error: ${data.error}`;
+                } else {
+                    document.getElementById('feedback-response').innerText = data.message;
+                    document.getElementById('feedback-form').reset(); // Clear the form
+                }
+            })
+            .catch(error => {
+                document.getElementById('feedback-response').innerText = `Error: ${error.message}`;
+            });
+        });
+    </script>
+</body>
+</html>
