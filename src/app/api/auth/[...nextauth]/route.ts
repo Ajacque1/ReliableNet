@@ -4,16 +4,20 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 import NextAuth from "next-auth/next"
-import { DefaultSession } from "next-auth"
 
 declare module "next-auth" {
-  interface Session extends DefaultSession {
+  interface Session {
     user: {
       id: string
-      name?: string | null
       email?: string | null
-      image?: string | null
+      name?: string | null
     }
+  }
+  
+  interface User {
+    id: string
+    email: string
+    name?: string
   }
 }
 
