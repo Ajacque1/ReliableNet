@@ -4,6 +4,18 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 import NextAuth from "next-auth/next"
+import { DefaultSession } from "next-auth"
+
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string
+      name?: string | null
+      email?: string | null
+      image?: string | null
+    }
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: SupabaseAdapter({

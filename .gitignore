@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -39,11 +38,16 @@ next-env.d.ts
 # prisma
 /prisma/*.db
 /prisma/migrations
-=======
-venv/
-__pycache__/
-*.pyc
-*.log
+
+# IDE
+.idea
+.vscode
+
+# environment variables
 .env
-instance/
->>>>>>> 8db851a2f691e0474bc78c0398b2798f3630a94e
+.env.local
+.env.development
+.env.production
+
+# Supabase
+.supabase/
