@@ -25,7 +25,80 @@ model SpeedTest {
   uploadSpeed   Float
   ping          Float
   createdAt     DateTime  @default(now())
+  latitude      Float?
+  longitude     Float?
+  city          String?
+  state         String?
+  country       String?
+  zip           String?
+  isp           String?
+  ispOrg        String?
+  asn           String?
   user          User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@index([city, state])
+  @@index([latitude, longitude])
+  @@index([isp])
+}
+
+model ISPMetrics {
+  id            String    @id @default(cuid())
+  isp           String
+  avgDownload   Float
+  avgUpload     Float
+  avgPing       Float
+  testCount     Int
+  peakHourAvgDown Float?
+  peakHourAvgUp   Float?
+  peakHourAvgPing Float?
+  offPeakAvgDown  Float?
+  offPeakAvgUp    Float?
+  offPeakAvgPing  Float?
+  reliability     Float?  // Percentage of successful tests
+  city          String?
+  state         String?
+  country       String?
+  updatedAt     DateTime  @updatedAt
+  reviews       ISPReview[]
+  coverage      ISPCoverage[]
+
+  @@unique([isp, city, state, country])
+  @@index([isp])
+  @@index([city, state])
+}
+
+model ISPReview {
+  id          String    @id @default(cuid())
+  ispMetricId String
+  userId      String
+  rating      Int       // 1-5 stars
+  comment     String?   @db.Text
+  pros        String[]
+  cons        String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  helpful     Int       @default(0)
+  notHelpful  Int       @default(0)
+  ispMetric   ISPMetrics @relation(fields: [ispMetricId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@index([ispMetricId])
+  @@index([userId])
+}
+
+model ISPCoverage {
+  id          String    @id @default(cuid())
+  ispMetricId String
+  latitude    Float
+  longitude   Float
+  signalStrength Float  // Normalized 0-1 value
+  technology  String    // e.g., "Fiber", "Cable", "DSL"
+  maxSpeed    Float?    // Maximum advertised speed in Mbps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  ispMetric   ISPMetrics @relation(fields: [ispMetricId], references: [id])
+
+  @@index([ispMetricId])
+  @@index([latitude, longitude])
 }
