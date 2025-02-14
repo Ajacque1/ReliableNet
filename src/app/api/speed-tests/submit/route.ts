@@ -3,12 +3,26 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
+interface SpeedTestData {
+  downloadSpeed: number
+  uploadSpeed: number
+  ping: number
+  location?: {
+    latitude?: number
+    longitude?: number
+    city?: string
+    state?: string
+    country?: string
+    zip?: string
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const { downloadSpeed, uploadSpeed, ping, location } = await request.json()
+    const data: SpeedTestData = await request.json()
 
     // Validate required fields
-    if (!downloadSpeed || !uploadSpeed || !ping) {
+    if (!data.downloadSpeed || !data.uploadSpeed || !data.ping) {
       return NextResponse.json(
         { error: "Missing required speed test data" },
         { status: 400 }
@@ -24,41 +38,42 @@ export async function POST(request: Request) {
 
     // Prepare speed test data
     const speedTestData = {
-      downloadSpeed,
-      uploadSpeed,
-      ping,
+      downloadSpeed: data.downloadSpeed,
+      uploadSpeed: data.uploadSpeed,
+      ping: data.ping,
       userId: session?.user?.id || null,
       createdAt: new Date().toISOString(),
       isp: ispData.isp,
       ispOrg: ispData.org,
       asn: ispData.asn,
-      ...(location && {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        city: location.city,
-        state: location.state,
-        country: location.country,
-        zip: location.zip,
+      ...(data.location && {
+        latitude: data.location.latitude,
+        longitude: data.location.longitude,
+        city: data.location.city,
+        state: data.location.state,
+        country: data.location.country,
+        zip: data.location.zip,
       }),
     }
 
     // Insert speed test data
-    const { data, error } = await supabase
+    const { error: insertError } = await supabase
       .from("speed_tests")
       .insert([speedTestData])
-      .select()
-      .single()
 
-    if (error) throw error
+    if (insertError) throw insertError
 
     // Update ISP metrics
-    await updateISPMetrics(speedTestData)
+    if (speedTestData.isp && speedTestData.city && speedTestData.state) {
+      await updateISPMetrics(speedTestData)
+    }
 
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true })
+
   } catch (error) {
-    console.error("Failed to submit speed test:", error)
+    console.error('Failed to submit speed test:', error)
     return NextResponse.json(
-      { error: "Failed to submit speed test" },
+      { error: 'Failed to submit speed test' },
       { status: 500 }
     )
   }
@@ -71,7 +86,10 @@ async function updateISPMetrics(speedTest: any) {
   const { data: existing } = await supabase
     .from('ISPMetrics')
     .select('*')
-    .match({ isp, city, state, country })
+    .eq('isp', isp)
+    .eq('city', city)
+    .eq('state', state)
+    .eq('country', country)
     .single()
 
   if (existing) {
