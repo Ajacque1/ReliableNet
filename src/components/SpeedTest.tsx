@@ -102,8 +102,10 @@ export function SpeedTest() {
       setResults(testResults)
       setState("complete")
 
-      // Submit results
-      await submitResults(testResults)
+      // Submit results only if user is logged in
+      if (session?.user) {
+        await submitResults(testResults)
+      }
 
     } catch (error) {
       console.error("Speed test failed:", error)

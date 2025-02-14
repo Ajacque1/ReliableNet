@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -29,7 +29,7 @@ interface Review {
   helpful: number
   notHelpful: number
   user: {
-    name: string
+    name: string | null
   }
 }
 
@@ -47,23 +47,41 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
   const [sortBy, setSortBy] = useState<'recent' | 'helpful' | 'rating'>('recent')
   const [filterRating, setFilterRating] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchReviews()
-  }, [ispMetricId])
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       const response = await fetch(`/api/isp/reviews?ispMetricId=${ispMetricId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch reviews')
+      }
       const data = await response.json()
       setReviews(data.reviews)
     } catch (error) {
       console.error('Failed to fetch reviews:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load reviews",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
-  }
+  }, [ispMetricId, toast])
 
-  const submitReview = async () => {
+  useEffect(() => {
+    fetchReviews()
+  }, [fetchReviews])
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to submit a review",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       const response = await fetch('/api/isp/reviews', {
         method: 'POST',
@@ -76,14 +94,15 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to submit review')
+      if (!response.ok) {
+        throw new Error('Failed to submit review')
+      }
 
       toast({
         title: "Review submitted",
         description: "Thank you for your feedback!",
       })
 
-      // Reset form and refresh reviews
       setNewReview({ rating: 0, comment: "", pros: [""], cons: [""] })
       fetchReviews()
     } catch (error) {
@@ -118,11 +137,11 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to submit vote')
+      if (!response.ok) {
+        throw new Error('Failed to submit vote')
+      }
 
-      // Refresh reviews to show updated vote counts
       fetchReviews()
-
       toast({
         title: "Vote recorded",
         description: "Thank you for your feedback!",
@@ -137,38 +156,36 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
     }
   }
 
-  const sortedAndFilteredReviews = () => {
-    let filtered = [...reviews]
-    
-    if (filterRating) {
-      filtered = filtered.filter(review => review.rating === filterRating)
-    }
+  const sortedAndFilteredReviews = reviews
+    .filter(review => !filterRating || review.rating === filterRating)
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'helpful':
+          return b.helpful - a.helpful
+        case 'rating':
+          return b.rating - a.rating
+        case 'recent':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
 
-    switch (sortBy) {
-      case 'helpful':
-        return filtered.sort((a, b) => b.helpful - a.helpful)
-      case 'rating':
-        return filtered.sort((a, b) => b.rating - a.rating)
-      case 'recent':
-      default:
-        return filtered.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-    }
+  if (loading) {
+    return <div>Loading reviews...</div>
   }
 
   return (
     <div className="space-y-6">
-      {/* Review Form */}
       {session && (
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
-            <div className="space-y-4">
+            <form onSubmit={submitReview} className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
               <div className="flex space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
+                    type="button"
                     onClick={() => setNewReview({ ...newReview, rating: star })}
                     className={`p-1 ${
                       star <= newReview.rating ? "text-yellow-400" : "text-gray-300"
@@ -184,14 +201,14 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
                 onChange={(e) =>
                   setNewReview({ ...newReview, comment: e.target.value })
                 }
+                required
               />
-              <Button onClick={submitReview}>Submit Review</Button>
-            </div>
+              <Button type="submit">Submit Review</Button>
+            </form>
           </CardContent>
         </Card>
       )}
 
-      {/* Filtering and Sorting Controls */}
       <div className="flex justify-between items-center">
         <Select
           value={filterRating?.toString() || "all"}
@@ -229,9 +246,8 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
         </Select>
       </div>
 
-      {/* Reviews List */}
       <div className="space-y-4">
-        {sortedAndFilteredReviews().map((review) => (
+        {sortedAndFilteredReviews.map((review) => (
           <Card key={review.id}>
             <CardContent className="pt-6">
               <div className="flex justify-between items-start mb-4">
@@ -249,11 +265,12 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    By {review.user.name}
+                    By {review.user.name || 'Anonymous'}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4 text-sm">
                   <button 
+                    type="button"
                     className="flex items-center space-x-1 hover:text-primary"
                     onClick={() => handleVote(review.id, 'helpful')}
                   >
@@ -261,6 +278,7 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
                     <span>{review.helpful}</span>
                   </button>
                   <button 
+                    type="button"
                     className="flex items-center space-x-1 hover:text-primary"
                     onClick={() => handleVote(review.id, 'notHelpful')}
                   >

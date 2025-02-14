@@ -98,12 +98,19 @@ export function ISPDetailedStats({ ispId, city, state }: ISPDetailedStatsProps) 
             labelFormatter={(hour) => `${hour}:00`}
           />
           <Legend />
-          <DataComponent 
-            dataKey={chartMetric}
-            name={chartMetric.charAt(0).toUpperCase() + chartMetric.slice(1)}
-            fill="hsl(var(--primary))"
-            stroke="hsl(var(--primary))"
-          />
+          {chartType === 'bar' ? (
+            <Bar
+              dataKey={chartMetric}
+              name={chartMetric.charAt(0).toUpperCase() + chartMetric.slice(1)}
+              fill="hsl(var(--primary))"
+            />
+          ) : (
+            <Line
+              dataKey={chartMetric}
+              name={chartMetric.charAt(0).toUpperCase() + chartMetric.slice(1)}
+              stroke="hsl(var(--primary))"
+            />
+          )}
         </ChartComponent>
       </ResponsiveContainer>
     )

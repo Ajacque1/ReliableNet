@@ -22,10 +22,25 @@ export async function POST(request: Request) {
       )
     }
 
+    // First get current value
+    const { data: review } = await supabase
+      .from('ISPReview')
+      .select(voteType)
+      .eq('id', reviewId)
+      .single()
+
+    if (!review) {
+      return NextResponse.json(
+        { error: "Review not found" },
+        { status: 404 }
+      )
+    }
+
+    // Then increment it
     const { data, error } = await supabase
       .from('ISPReview')
       .update({
-        [voteType]: supabase.raw(`${voteType} + 1`)
+        [voteType]: Number(review[voteType] || 0) + 1
       })
       .eq('id', reviewId)
       .select()

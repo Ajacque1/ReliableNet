@@ -1,3 +1,5 @@
+// Delete this file if you're not using AspectRatio component
+
 "use client"
 
 import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"

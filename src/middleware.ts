@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server"
 
 // Export the middleware with both auth checks
 export default withAuth(
-  async function middleware(req: NextRequest) {
+  async function middleware(_req: NextRequest) {
     // Add any custom middleware logic here
     return NextResponse.next()
   },
