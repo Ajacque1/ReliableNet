@@ -40,7 +40,7 @@ next-env.d.ts
 
 # prisma
 /prisma/*.db
-/prisma/migrations
+/prisma/migrations/.keep
 
 # IDE
 .idea

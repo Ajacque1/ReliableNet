@@ -28,15 +28,25 @@ export function Navigation() {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger>Compare ISPs</NavigationMenuTrigger>
+                <NavigationMenuTrigger>Find Reviews</NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 w-[400px]">
+                  <ul className="grid gap-3 p-4 w-[400px]">
                     <li>
                       <NavigationMenuLink asChild>
-                        <a href="/isp-comparison" className="block select-none space-y-1 rounded-md p-3 hover:bg-accent hover:text-accent-foreground">
-                          <div className="text-sm font-medium">Find Providers</div>
-                          <p className="text-sm leading-snug text-muted-foreground">
-                            Compare internet service providers in your area
+                        <a href="/complexes" className="block p-3 hover:bg-accent rounded-lg">
+                          <div className="text-sm font-medium mb-1">Apartment Reviews</div>
+                          <p className="text-sm text-muted-foreground">
+                            Find internet reviews for apartment complexes
+                          </p>
+                        </a>
+                      </NavigationMenuLink>
+                    </li>
+                    <li>
+                      <NavigationMenuLink asChild>
+                        <a href="/isp-comparison" className="block p-3 hover:bg-accent rounded-lg">
+                          <div className="text-sm font-medium mb-1">ISP Comparison</div>
+                          <p className="text-sm text-muted-foreground">
+                            Compare internet service providers
                           </p>
                         </a>
                       </NavigationMenuLink>
@@ -45,7 +55,10 @@ export function Navigation() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink href="/reviews" className="px-4 py-2">
+                <NavigationMenuLink 
+                  href="/reviews" 
+                  className="px-4 py-2 hover:text-primary transition-colors"
+                >
                   Reviews
                 </NavigationMenuLink>
               </NavigationMenuItem>

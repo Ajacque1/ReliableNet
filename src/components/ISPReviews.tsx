@@ -49,7 +49,7 @@ export function ISPReviews({ ispMetricId }: ISPReviewsProps) {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const response = await fetch(`/api/isp/reviews?ispMetricId=${ispMetricId}`)
+      const response = await fetch(`/api/isp/reviews/${ispMetricId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch reviews')
       }
