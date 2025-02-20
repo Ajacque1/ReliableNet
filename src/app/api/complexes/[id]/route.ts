@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
+import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
 export async function GET(
@@ -9,90 +9,157 @@ export async function GET(
 ) {
   try {
     const { id } = params
-    
-    const complex = await prisma.apartmentComplex.findUnique({
-      where: { id },
-      include: {
-        reviews: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                image: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          }
-        },
-        isps: {
-          include: {
-            ispMetric: true
-          }
-        },
-        speedTests: {
-          orderBy: {
-            createdAt: 'desc'
-          },
-          take: 10
-        }
-      }
-    })
+
+    const { data: complex, error } = await supabase
+      .from("ApartmentComplex")
+      .select(`
+        *,
+        reviews:ApartmentReview(
+          id,
+          rating,
+          internetRating,
+          comment,
+          pros,
+          cons,
+          verified,
+          helpfulCount,
+          createdAt,
+          user:users(name)
+        ),
+        isps:ComplexISP(
+          id,
+          isDefault,
+          coverage,
+          speedTests,
+          ispMetric:ISPMetrics(
+            id,
+            isp,
+            avgDownload,
+            avgUpload,
+            avgPing,
+            reliability,
+            testCount
+          )
+        ),
+        speedTests:SpeedTest(
+          id,
+          downloadSpeed,
+          uploadSpeed,
+          ping,
+          createdAt,
+          isp
+        )
+      `)
+      .eq("id", id)
+      .single()
+
+    if (error) throw error
 
     if (!complex) {
       return NextResponse.json(
-        { error: "Complex not found" },
+        { error: "Apartment complex not found" },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(complex)
+    return NextResponse.json({ complex })
   } catch (error) {
-    console.error('Failed to fetch complex:', error)
+    console.error("Failed to fetch apartment complex:", error)
     return NextResponse.json(
-      { error: 'Failed to fetch complex' },
+      { error: "Failed to fetch apartment complex" },
       { status: 500 }
     )
   }
 }
 
-export async function PUT(
+export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Authentication required" },
         { status: 401 }
       )
     }
 
     const { id } = params
-    const body = await request.json()
+    const updates = await request.json()
 
-    const complex = await prisma.apartmentComplex.update({
-      where: { id },
-      data: {
-        name: body.name,
-        address: body.address,
-        city: body.city,
-        state: body.state,
-        zip: body.zip,
-        latitude: body.latitude,
-        longitude: body.longitude,
-        website: body.website,
-        amenities: body.amenities
-      }
-    })
+    // Validate the complex exists
+    const { data: existing } = await supabase
+      .from("ApartmentComplex")
+      .select("id")
+      .eq("id", id)
+      .single()
 
-    return NextResponse.json(complex)
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Apartment complex not found" },
+        { status: 404 }
+      )
+    }
+
+    // Update the complex
+    const { data: complex, error } = await supabase
+      .from("ApartmentComplex")
+      .update({
+        name: updates.name,
+        address: updates.address,
+        city: updates.city,
+        state: updates.state,
+        zip: updates.zip,
+        latitude: updates.latitude,
+        longitude: updates.longitude,
+        website: updates.website,
+        amenities: updates.amenities,
+        managementContact: updates.managementContact,
+      })
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ complex })
   } catch (error) {
-    console.error('Failed to update complex:', error)
+    console.error("Failed to update apartment complex:", error)
     return NextResponse.json(
-      { error: 'Failed to update complex' },
+      { error: "Failed to update apartment complex" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    const { id } = params
+
+    const { error } = await supabase
+      .from("ApartmentComplex")
+      .delete()
+      .eq("id", id)
+
+    if (error) throw error
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error("Failed to delete apartment complex:", error)
+    return NextResponse.json(
+      { error: "Failed to delete apartment complex" },
       { status: 500 }
     )
   }
