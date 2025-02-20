@@ -3,23 +3,10 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { StarIcon, ThumbsUp, ThumbsDown } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-
-interface Review {
-  id: string
-  rating: number
-  internetRating: number
-  comment: string
-  pros: string[]
-  cons: string[]
-  helpfulCount: number
-  createdAt: string
-  user: {
-    name: string
-  }
-}
+import type { ComplexReview } from "@/types/complex"
 
 interface ReviewListProps {
-  reviews: Review[]
+  reviews: ComplexReview[]
   onHelpfulClick?: (reviewId: string) => void
 }
 
