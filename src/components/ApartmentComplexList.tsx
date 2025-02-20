@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -70,7 +70,7 @@ export function ApartmentComplexList() {
     hasISP: false,
   })
 
-  const fetchComplexes = async () => {
+  const fetchComplexes = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -103,11 +103,11 @@ export function ApartmentComplexList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, filters, toast])
 
   useEffect(() => {
     fetchComplexes()
-  }, [pagination.page, filters.city, filters.state])
+  }, [fetchComplexes])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

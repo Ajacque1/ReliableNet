@@ -25,10 +25,11 @@ interface SpeedTest {
 
 interface SpeedTestHistoryProps {
   speedTests: SpeedTest[]
-  complexId: string
+  complexId?: string
+  userId?: string
 }
 
-export function SpeedTestHistory({ speedTests, complexId }: SpeedTestHistoryProps) {
+export function SpeedTestHistory({ speedTests, complexId, userId }: SpeedTestHistoryProps) {
   const { toast } = useToast()
 
   // Sort speed tests by date
@@ -63,10 +64,10 @@ export function SpeedTestHistory({ speedTests, complexId }: SpeedTestHistoryProp
 
   const handleExport = async (format: string) => {
     try {
-      const params = new URLSearchParams({
-        format,
-        complexId,
-      })
+      const params = new URLSearchParams()
+      params.set("format", format)
+      if (complexId) params.set("complexId", complexId)
+      if (userId) params.set("userId", userId)
 
       const response = await fetch(`/api/speed-tests/export?${params}`)
       if (!response.ok) throw new Error("Failed to export data")
@@ -77,7 +78,7 @@ export function SpeedTestHistory({ speedTests, complexId }: SpeedTestHistoryProp
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `speed_tests_${format(new Date(), "yyyy-MM-dd")}.csv`
+        a.download = `speed_tests_${new Date().toISOString().split("T")[0]}.csv`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -89,7 +90,7 @@ export function SpeedTestHistory({ speedTests, complexId }: SpeedTestHistoryProp
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `speed_tests_${format(new Date(), "yyyy-MM-dd")}.json`
+        a.download = `speed_tests_${new Date().toISOString().split("T")[0]}.json`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
