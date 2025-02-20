@@ -1,14 +1,13 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider   = "postgresql"
   url        = env("POSTGRES_PRISMA_URL")
   directUrl  = env("POSTGRES_URL_NON_POOLING")
-  extensions = [uuid_ossp(map: "uuid-ossp", schema: "extensions")]
-  schemas    = ["auth", "public"]
+  schemas    = ["public", "auth"]
 }
 
 model SpeedTest {
@@ -110,6 +109,7 @@ model User {
   id              String           @id
   email           String           @unique
   name            String?
+  image           String?
   password        String
   createdAt       DateTime         @default(now())
   ISPReview       ISPReview[]

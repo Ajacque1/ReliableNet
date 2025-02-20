@@ -12,46 +12,22 @@ export async function GET(request: Request) {
     const lng = searchParams.get('lng')
     const radius = searchParams.get('radius') // in miles
 
-    let query: any = {
-      where: {},
+    const query = prisma.apartmentComplex.findMany({
+      where: {
+        ...(city && state ? { city, state } : {})
+      },
       include: {
-        reviews: {
-          select: {
-            rating: true,
-            internetRating: true
-          }
-        },
+        reviews: true,
         isps: {
           include: {
             ispMetric: true
           }
         }
       }
-    }
-
-    // Location-based filtering
-    if (city && state) {
-      query.where.AND = [
-        { city: { equals: city, mode: 'insensitive' } },
-        { state: { equals: state, mode: 'insensitive' } }
-      ]
-    }
-
-    // Geospatial search if coordinates provided
-    if (lat && lng && radius) {
-      // Add geospatial query conditions
-      // Note: Requires PostGIS extension for proper implementation
-    }
-
-    const complexes = await prisma.apartmentComplex.findMany(query)
-
-    return NextResponse.json({ 
-      complexes: complexes.map(c => ({
-        ...c,
-        avgRating: c.reviews.reduce((acc, r) => acc + r.rating, 0) / c.reviews.length || 0,
-        avgInternetRating: c.reviews.reduce((acc, r) => acc + r.internetRating, 0) / c.reviews.length || 0
-      }))
     })
+
+    const complexes = await query
+    return NextResponse.json({ complexes })
   } catch (error) {
     console.error('Failed to fetch complexes:', error)
     return NextResponse.json(

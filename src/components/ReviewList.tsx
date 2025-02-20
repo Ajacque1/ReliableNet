@@ -15,7 +15,6 @@ interface Review {
   createdAt: string
   user: {
     name: string
-    image?: string
   }
 }
 

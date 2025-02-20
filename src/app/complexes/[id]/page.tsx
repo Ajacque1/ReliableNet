@@ -33,16 +33,14 @@ export default function ComplexDetail() {
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to fetch complex details",
+          description: "Failed to fetch complex data",
           variant: "destructive"
         })
       }
     }
 
-    if (params.id) {
-      fetchComplex()
-    }
-  }, [params.id])
+    fetchComplex()
+  }, [params.id, toast])
 
   const handleReviewSubmitted = (newReview: any) => {
     setReviews([newReview, ...reviews])

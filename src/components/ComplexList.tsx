@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,7 @@ export function ComplexList() {
   })
   const { toast } = useToast()
 
-  const fetchComplexes = async () => {
+  const fetchComplexes = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (filters.city) params.append("city", filters.city)
@@ -36,19 +36,15 @@ export function ComplexList() {
       const data = await res.json()
       setComplexes(data.complexes)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch apartment complexes",
-        variant: "destructive"
-      })
+      console.error('Failed to fetch complexes:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     fetchComplexes()
-  }, [filters])
+  }, [fetchComplexes])
 
   return (
     <div className="space-y-6">

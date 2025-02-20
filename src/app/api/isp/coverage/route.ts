@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
+interface CoveragePoint {
+  latitude: number
+  longitude: number
+  signalStrength: number
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -34,12 +40,10 @@ export async function GET(request: Request) {
     if (error) throw error
 
     return NextResponse.json({
-      coverage: coverage.map(point => ({
+      coverage: coverage.map((point: CoveragePoint) => ({
         latitude: point.latitude,
         longitude: point.longitude,
         signalStrength: point.signalStrength,
-        technology: point.technology,
-        maxSpeed: point.maxSpeed,
       }))
     })
 
