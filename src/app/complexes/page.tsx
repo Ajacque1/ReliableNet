@@ -8,11 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, MapPin } from "lucide-react"
 import { ApartmentComplexList } from "@/components/ApartmentComplexList"
 
-export const metadata = {
-  title: "Apartment Complexes | ReliableNet",
-  description: "Find and compare internet service providers in apartment complexes near you."
-}
-
 export default function ComplexesPage() {
   const [location, setLocation] = useState({
     city: "",
