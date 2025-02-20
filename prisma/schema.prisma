@@ -111,11 +111,16 @@ model User {
   name            String?
   image           String?
   password        String
+  notifications   Json             @default("{\"speedTestReminders\": false, \"newReviews\": false, \"ispUpdates\": false}")
   createdAt       DateTime         @default(now())
-  ISPReview       ISPReview[]
   speedTests      SpeedTest[]
   apartmentReviews ApartmentReview[]
   flaggedReviews   ApartmentReview[] @relation("FlaggedBy")
+  savedComparisons SavedComparison[]
+  favoriteComplexes FavoriteComplex[]
+  sentMessages    Message[]        @relation("SentMessages")
+  conversations   UserConversation[]
+  ispReviews      ISPReview[]
 
   @@schema("public")
 }
@@ -131,12 +136,15 @@ model ApartmentComplex {
   longitude   Float?
   website     String?
   amenities   String[] // ["fiber_ready", "free_wifi", etc.]
+  badges      String[] // ["wfh_friendly", "streamer_approved", "gamer_ready", etc.]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   reviews     ApartmentReview[]
   speedTests  SpeedTest[]
   isps        ComplexISP[]
+  favoritedBy FavoriteComplex[]
+  conversations Conversation[]
 
   @@index([city, state])
   @@index([latitude, longitude])
@@ -185,5 +193,117 @@ model ComplexISP {
   @@unique([complexId, ispMetricId])
   @@index([complexId])
   @@index([ispMetricId])
+  @@schema("public")
+}
+
+model SavedComparison {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  ispIds      String[]
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model FavoriteComplex {
+  id          String   @id @default(cuid())
+  userId      String
+  complexId   String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  complex     ApartmentComplex @relation(fields: [complexId], references: [id])
+
+  @@unique([userId, complexId])
+  @@index([userId])
+  @@index([complexId])
+  @@schema("public")
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+  name        String?  // For group conversations
+  complexId   String?  // Optional link to apartment complex
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  messages    Message[]
+  participants UserConversation[]
+  complex     ApartmentComplex? @relation(fields: [complexId], references: [id])
+
+  @@index([complexId])
+  @@schema("public")
+}
+
+model UserConversation {
+  id             String       @id @default(cuid())
+  userId         String
+  conversationId String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@unique([userId, conversationId])
+  @@index([userId])
+  @@index([conversationId])
+  @@schema("public")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId      String
+  content       String       @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+  sender        User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@schema("public")
+}
+
+model TipCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  slug        String   @unique
+  tips        Tip[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model Tip {
+  id            String      @id @default(cuid())
+  title         String
+  content       String      @db.Text
+  categoryId    String
+  tags          String[]
+  helpfulCount  Int         @default(0)
+  unhelpfulCount Int        @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  category      TipCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@schema("public")
+}
+
+model FAQ {
+  id            String   @id @default(cuid())
+  question      String
+  answer        String   @db.Text
+  category      String
+  tags          String[]
+  helpfulCount  Int      @default(0)
+  unhelpfulCount Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@schema("public")
 }
