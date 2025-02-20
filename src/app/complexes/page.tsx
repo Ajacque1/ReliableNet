@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, MapPin } from "lucide-react"
+import { ApartmentComplexList } from "@/components/ApartmentComplexList"
+
+export const metadata = {
+  title: "Apartment Complexes | ReliableNet",
+  description: "Find and compare internet service providers in apartment complexes near you."
+}
 
 export default function ComplexesPage() {
   const [location, setLocation] = useState({
@@ -20,43 +26,16 @@ export default function ComplexesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Find Internet Reviews</h1>
-        <p className="text-lg text-gray-600">
-          Read community reviews about internet service in apartment complexes near you
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">
+          Find Internet Reviews by Apartment Complex
+        </h1>
+        <p className="text-muted-foreground mb-8">
+          Compare internet service providers and read reviews from residents in apartment complexes near you.
         </p>
+
+        <ApartmentComplexList />
       </div>
-
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <MapPin className="h-5 w-5 mr-2" />
-            Search by Location
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLocationSubmit} className="flex gap-4">
-            <Input
-              placeholder="City"
-              value={location.city}
-              onChange={(e) => setLocation(l => ({ ...l, city: e.target.value }))}
-              className="flex-1"
-            />
-            <Input
-              placeholder="State"
-              value={location.state}
-              onChange={(e) => setLocation(l => ({ ...l, state: e.target.value }))}
-              className="w-32"
-            />
-            <Button type="submit">
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <ComplexList />
     </div>
   )
 } 
