@@ -1,36 +1,9 @@
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params
-    
-    const reviews = await prisma.apartmentReview.findMany({
-      where: { complexId: id },
-      include: {
-        user: {
-          select: {
-            name: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    return NextResponse.json({ reviews })
-  } catch (error) {
-    console.error('Failed to fetch reviews:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch reviews' },
-      { status: 500 }
-    )
-  }
-}
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: Request,
@@ -38,41 +11,103 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Authentication required" },
         { status: 401 }
       )
     }
 
-    const { id } = params
-    const body = await request.json()
+    const { id: complexId } = params
+    const {
+      rating,
+      internetRating,
+      comment,
+      pros,
+      cons
+    } = await request.json()
 
+    // Validate required fields
+    if (!rating || !internetRating) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    // Verify the complex exists
+    const complex = await prisma.apartmentComplex.findUnique({
+      where: { id: complexId },
+      select: { id: true }
+    })
+
+    if (!complex) {
+      return NextResponse.json(
+        { error: "Apartment complex not found" },
+        { status: 404 }
+      )
+    }
+
+    // Create the review
     const review = await prisma.apartmentReview.create({
       data: {
-        complexId: id,
+        complexId,
         userId: session.user.id,
-        rating: body.rating,
-        internetRating: body.internetRating,
-        comment: body.comment,
-        pros: body.pros || [],
-        cons: body.cons || []
+        rating,
+        internetRating,
+        comment,
+        pros,
+        cons,
+        verified: false, // This could be updated later based on verification process
+        helpfulCount: 0
       },
       include: {
         user: {
           select: {
-            name: true,
-            image: true
+            name: true
           }
         }
       }
     })
 
-    return NextResponse.json(review)
+    return NextResponse.json({ review })
   } catch (error) {
-    console.error('Failed to create review:', error)
+    console.error("Failed to submit review:", error)
     return NextResponse.json(
-      { error: 'Failed to create review' },
+      { error: "Failed to submit review" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id: complexId } = params
+
+    const reviews = await prisma.apartmentReview.findMany({
+      where: {
+        complexId
+      },
+      include: {
+        user: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return NextResponse.json({ reviews })
+  } catch (error) {
+    console.error("Failed to fetch reviews:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
       { status: 500 }
     )
   }

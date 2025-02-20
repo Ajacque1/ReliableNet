@@ -4,9 +4,16 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ApartmentComplexDetails } from "@/components/ApartmentComplexDetails"
 import { useToast } from "@/components/ui/use-toast"
+import { prisma } from "@/lib/prisma"
+import { notFound } from "next/navigation"
 
-export default function ComplexDetailPage() {
-  const params = useParams()
+interface Props {
+  params: {
+    id: string
+  }
+}
+
+export default async function ComplexDetailPage({ params }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [complex, setComplex] = useState<any>(null)
@@ -46,16 +53,13 @@ export default function ComplexDetailPage() {
   }
 
   if (!complex) {
-    return <div>Complex not found</div>
+    notFound()
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
-        <ApartmentComplexDetails
-          complex={complex}
-          onEdit={handleEdit}
-        />
+        <ApartmentComplexDetails complex={complex} />
       </div>
     </div>
   )

@@ -1,7 +1,10 @@
-import { supabase } from "@/lib/supabase"
+import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { Prisma } from "@prisma/client"
+
+export const dynamic = 'force-dynamic'
 
 interface CreateComplexData {
   name: string
@@ -41,9 +44,8 @@ export async function POST(request: Request) {
     }
 
     // Create the complex
-    const { data: complex, error } = await supabase
-      .from("ApartmentComplex")
-      .insert([{
+    const complex = await prisma.apartmentComplex.create({
+      data: {
         name: data.name,
         address: data.address,
         city: data.city,
@@ -53,12 +55,8 @@ export async function POST(request: Request) {
         longitude: data.longitude,
         website: data.website,
         amenities: data.amenities,
-        managementContact: data.managementContact,
-      }])
-      .select()
-      .single()
-
-    if (error) throw error
+      }
+    })
 
     return NextResponse.json({ complex })
   } catch (error) {
@@ -76,64 +74,81 @@ export async function GET(request: Request) {
     const city = searchParams.get("city")
     const state = searchParams.get("state")
     const amenities = searchParams.getAll("amenities")
-    const hasISP = searchParams.get("hasISP")
+    const hasISP = searchParams.get("hasISP") === "true"
     const query = searchParams.get("query")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
 
-    // Build query
-    let dbQuery = supabase
-      .from("ApartmentComplex")
-      .select(`
-        *,
-        reviews:ApartmentReview(count),
-        isps:ComplexISP(
-          ispMetric:ISPMetrics(
-            id,
-            isp,
-            avgDownload,
-            avgUpload,
-            avgPing
-          )
-        )
-      `)
-
-    // Apply filters
-    if (city) {
-      dbQuery = dbQuery.eq("city", city)
-    }
-    if (state) {
-      dbQuery = dbQuery.eq("state", state)
-    }
-    if (amenities.length > 0) {
-      dbQuery = dbQuery.contains("amenities", amenities)
-    }
-    if (hasISP) {
-      dbQuery = dbQuery.not("isps", "is", null)
-    }
-    if (query) {
-      dbQuery = dbQuery.or(
-        `name.ilike.%${query}%,address.ilike.%${query}%`
-      )
+    // Build query conditions
+    const where: Prisma.ApartmentComplexWhereInput = {
+      AND: [
+        // Location filters
+        ...(city ? [{ city }] : []),
+        ...(state ? [{ state }] : []),
+        // Amenities filter
+        ...(amenities.length > 0 ? [{
+          amenities: {
+            hasSome: amenities
+          }
+        }] : []),
+        // ISP filter
+        ...(hasISP ? [{
+          isps: {
+            some: {}
+          }
+        }] : []),
+        // Search query
+        ...(query ? [{
+          OR: [
+            { name: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { address: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { city: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { state: { contains: query, mode: Prisma.QueryMode.insensitive } }
+          ]
+        }] : [])
+      ]
     }
 
-    // Add pagination
-    const start = (page - 1) * limit
-    dbQuery = dbQuery
-      .order("name")
-      .range(start, start + limit - 1)
+    // Get total count for pagination
+    const total = await prisma.apartmentComplex.count({ where })
 
-    const { data: complexes, error, count } = await dbQuery
-
-    if (error) throw error
+    // Get paginated results with related data
+    const complexes = await prisma.apartmentComplex.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            reviews: true
+          }
+        },
+        isps: {
+          include: {
+            ispMetric: {
+              select: {
+                id: true,
+                isp: true,
+                avgDownload: true,
+                avgUpload: true,
+                avgPing: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      },
+      skip: (page - 1) * limit,
+      take: limit
+    })
 
     return NextResponse.json({
       complexes,
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages: count ? Math.ceil(count / limit) : 0,
+        total,
+        totalPages: Math.ceil(total / limit)
       }
     })
   } catch (error) {

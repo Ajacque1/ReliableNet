@@ -1,17 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ApartmentComplexMap } from "@/components/ApartmentComplexMap"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import dynamic from "next/dynamic"
 
-// Dynamically import the map component to avoid SSR issues
-const DynamicMap = dynamic(() => Promise.resolve(ApartmentComplexMap), {
-  ssr: false,
-})
+// Dynamically import the map component with no SSR
+const DynamicMap = dynamic(
+  () => import("@/components/ApartmentComplexMap").then(mod => mod.ApartmentComplexMap),
+  { 
+    ssr: false,
+    loading: () => (
+      <Card className="h-[600px] flex items-center justify-center">
+        <p>Loading map...</p>
+      </Card>
+    )
+  }
+)
 
 interface ApartmentComplex {
   id: string
@@ -68,7 +75,7 @@ export default function MapPage() {
   })
 
   // Calculate the center based on the average of all complex coordinates
-  const center = complexes.length
+  const center: [number, number] = complexes.length > 0
     ? [
         complexes.reduce((sum, c) => sum + c.latitude, 0) / complexes.length,
         complexes.reduce((sum, c) => sum + c.longitude, 0) / complexes.length,
@@ -110,7 +117,7 @@ export default function MapPage() {
       </div>
       <DynamicMap
         complexes={filteredComplexes}
-        center={center as [number, number]}
+        center={center}
         zoom={12}
       />
     </div>
