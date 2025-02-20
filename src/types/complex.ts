@@ -1,3 +1,22 @@
+export interface SpeedTest {
+  id: string
+  userId: string
+  downloadSpeed: number
+  uploadSpeed: number
+  ping: number
+  createdAt: string
+  asn?: string
+  city?: string
+  country?: string
+  isp?: string
+  ispOrg?: string
+  latitude?: number
+  longitude?: number
+  state?: string
+  zip?: string
+  complexId?: string
+}
+
 export interface Complex {
   id: string
   name: string
@@ -50,4 +69,24 @@ export interface ComplexISP {
     avgUpload: number
     avgPing: number
   }
+}
+
+export interface ISPMetrics {
+  id: string
+  isp: string
+  avgDownload: number
+  avgUpload: number
+  avgPing: number
+  testCount: number
+  peakHourAvgDown?: number
+  peakHourAvgUp?: number
+  peakHourAvgPing?: number
+  offPeakAvgDown?: number
+  offPeakAvgUp?: number
+  offPeakAvgPing?: number
+  reliability?: number
+  city?: string
+  state?: string
+  country?: string
+  updatedAt: string
 } 
