@@ -6,22 +6,60 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
-    // TODO: Implement actual registration logic
+    const formData = new FormData(e.currentTarget)
+    const firstName = formData.get("firstName") as string
+    const lastName = formData.get("lastName") as string
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const confirmPassword = formData.get("confirmPassword") as string
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      router.push("/dashboard")
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name: `${firstName} ${lastName}`.trim(),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account")
+      }
+
+      toast({
+        title: "Account created successfully",
+        description: "You can now log in with your credentials.",
+      })
+
+      router.push("/auth/login")
     } catch (error) {
-      console.error("Registration failed:", error)
+      setError(error instanceof Error ? error.message : "Failed to create account")
     } finally {
       setIsLoading(false)
     }
@@ -40,9 +78,15 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-100 rounded-md">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Input
+                  name="firstName"
                   placeholder="First Name"
                   required
                   disabled={isLoading}
@@ -50,6 +94,7 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Input
+                  name="lastName"
                   placeholder="Last Name"
                   required
                   disabled={isLoading}
@@ -58,6 +103,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Input
+                name="email"
                 type="email"
                 placeholder="Email"
                 required
@@ -66,6 +112,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Input
+                name="password"
                 type="password"
                 placeholder="Password"
                 required
@@ -74,6 +121,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <Input
+                name="confirmPassword"
                 type="password"
                 placeholder="Confirm Password"
                 required

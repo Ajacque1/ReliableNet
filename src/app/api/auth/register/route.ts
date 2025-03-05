@@ -1,52 +1,75 @@
-import { supabaseAdmin } from "@/lib/supabase"
-import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import { validatePassword, sanitizeInput, userSchema } from '@/lib/security';
+import bcrypt from 'bcryptjs';
 
-export async function POST(req: Request) {
+const prisma = new PrismaClient();
+
+export async function POST(request: Request) {
   try {
-    const { email, password, name } = await req.json()
+    const body = await request.json();
+    
+    // Validate and sanitize input
+    const validatedData = userSchema.parse({
+      ...body,
+      email: body.email.toLowerCase(),
+      name: sanitizeInput(body.name),
+      password: body.password,
+    });
 
-    if (!email || !password) {
+    // Validate password
+    const passwordValidation = validatePassword(validatedData.password);
+    if (!passwordValidation.isValid) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: passwordValidation.message },
         { status: 400 }
-      )
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: validatedData.email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User already exists' },
+        { status: 400 }
+      );
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
-    // Create user in database
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .insert([
-        {
-          email,
-          password: hashedPassword,
-          name,
-        }
-      ])
-      .select()
-      .single()
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        id: uuidv4(),
+        email: validatedData.email,
+        name: validatedData.name,
+        password: hashedPassword,
+        isModerator: false,
+        notifications: {
+          speedTestReminders: false,
+          newReviews: false,
+          ispUpdates: false,
+        },
+      },
+    });
 
-    if (error) {
-      return NextResponse.json(
-        { error: "Failed to create user" },
-        { status: 500 }
-      )
-    }
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      }
-    })
-  } catch (error) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { message: 'User created successfully', user: userWithoutPassword },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Registration error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create user' },
       { status: 500 }
-    )
+    );
   }
 } 
