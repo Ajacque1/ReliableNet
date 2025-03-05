@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Building, Globe, MapPin, Wifi } from "lucide-react"
 import { SpeedTestHistory } from "./SpeedTestHistory"
 import { ReviewForm } from "./ReviewForm"
+import { ComplexBadges } from "./ComplexBadges"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 
@@ -59,6 +60,7 @@ interface ApartmentComplex {
   zip: string
   website?: string
   amenities: string[]
+  badges: string[]
   managementContact?: {
     name: string
     email: string
@@ -116,6 +118,11 @@ export function ApartmentComplexDetails({ complex }: ApartmentComplexDetailsProp
           )}
         </div>
       </div>
+
+      {/* Badges */}
+      {complex.badges?.length > 0 && (
+        <ComplexBadges badges={complex.badges} />
+      )}
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

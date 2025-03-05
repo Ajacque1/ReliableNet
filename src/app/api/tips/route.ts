@@ -7,15 +7,21 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get("query")
+    const categoryId = searchParams.get("categoryId")
 
     const tips = await prisma.tip.findMany({
-      where: query ? {
-        OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { content: { contains: query, mode: "insensitive" } },
-          { tags: { has: query } }
+      where: {
+        AND: [
+          categoryId ? { categoryId } : {},
+          query ? {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { content: { contains: query, mode: "insensitive" } },
+              { tags: { has: query } }
+            ]
+          } : {}
         ]
-      } : undefined,
+      },
       include: {
         category: true
       },

@@ -22,22 +22,26 @@ interface Tip {
 
 interface TipsListProps {
   searchQuery: string
+  categoryId?: string
 }
 
-export function TipsList({ searchQuery }: TipsListProps) {
+export function TipsList({ searchQuery, categoryId }: TipsListProps) {
   const { toast } = useToast()
   const [tips, setTips] = useState<Tip[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchTips()
-  }, [searchQuery])
+  }, [searchQuery, categoryId])
 
   const fetchTips = async () => {
     try {
       const params = new URLSearchParams()
       if (searchQuery) {
-        params.set("q", searchQuery)
+        params.set("query", searchQuery)
+      }
+      if (categoryId) {
+        params.set("categoryId", categoryId)
       }
 
       const response = await fetch(`/api/tips?${params}`)

@@ -167,6 +167,17 @@ model ApartmentReview {
   flagged         Boolean  @default(false)
   flaggedAt       DateTime?
   flaggedBy       String?
+  
+  // Peak Hour Performance Metrics
+  peakHourRating        Int?     // Rating during peak hours
+  peakHourComment       String?  @db.Text
+  peakHourStart         Int?     // Hour of day (0-23)
+  peakHourEnd           Int?     // Hour of day (0-23)
+  peakHourDownloadSpeed Float?   // Mbps during peak hours
+  peakHourUploadSpeed   Float?   // Mbps during peak hours
+  peakHourPing          Float?   // ms during peak hours
+  peakHourPacketLoss    Float?   // Percentage during peak hours
+
   flagger         User?    @relation("FlaggedBy", fields: [flaggedBy], references: [id])
   user            User     @relation(fields: [userId], references: [id])
   complex         ApartmentComplex @relation(fields: [complexId], references: [id])

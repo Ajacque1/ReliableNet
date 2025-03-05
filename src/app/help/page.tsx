@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Search, HelpCircle, Lightbulb } from "lucide-react"
 import { TipsList } from "@/components/TipsList"
 import { FAQList } from "@/components/FAQList"
+import { TipCategories } from "@/components/TipCategories"
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -31,17 +32,32 @@ export default function HelpPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="tips">
+        <Tabs defaultValue="categories">
           <TabsList className="mb-8">
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4" />
+              Browse Categories
+            </TabsTrigger>
             <TabsTrigger value="tips" className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4" />
-              Tips & Guides
+              All Tips
             </TabsTrigger>
             <TabsTrigger value="faqs" className="flex items-center gap-2">
               <HelpCircle className="h-4 w-4" />
               FAQs
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="categories">
+            <Card>
+              <CardHeader>
+                <CardTitle>Browse by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TipCategories />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="tips">
             <Card>

@@ -2,8 +2,103 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { updateComplexBadges } from "@/lib/badges"
 
 export const dynamic = 'force-dynamic'
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id: complexId } = params
+    const { searchParams } = new URL(request.url)
+
+    // Parse filter parameters
+    const sortBy = searchParams.get("sortBy") || "recent"
+    const minRating = parseInt(searchParams.get("minRating") || "0")
+    const minPeakHourRating = searchParams.get("minPeakHourRating")
+      ? parseInt(searchParams.get("minPeakHourRating")!)
+      : null
+    const hasPeakHourData = searchParams.get("hasPeakHourData") === "true"
+    const peakHourStart = searchParams.get("peakHourStart")
+      ? parseInt(searchParams.get("peakHourStart")!)
+      : undefined
+    const peakHourEnd = searchParams.get("peakHourEnd")
+      ? parseInt(searchParams.get("peakHourEnd")!)
+      : undefined
+    const minDownloadSpeed = searchParams.get("minDownloadSpeed")
+      ? parseFloat(searchParams.get("minDownloadSpeed")!)
+      : undefined
+    const maxPing = searchParams.get("maxPing")
+      ? parseFloat(searchParams.get("maxPing")!)
+      : undefined
+    const maxPacketLoss = searchParams.get("maxPacketLoss")
+      ? parseFloat(searchParams.get("maxPacketLoss")!)
+      : undefined
+
+    // Build where clause
+    const where = {
+      complexId,
+      rating: { gte: minRating },
+      ...(hasPeakHourData && {
+        peakHourRating: { not: null }
+      }),
+      ...(minPeakHourRating && {
+        peakHourRating: { gte: minPeakHourRating }
+      }),
+      ...(peakHourStart && {
+        peakHourStart
+      }),
+      ...(peakHourEnd && {
+        peakHourEnd
+      }),
+      ...(minDownloadSpeed && {
+        peakHourDownloadSpeed: { gte: minDownloadSpeed }
+      }),
+      ...(maxPing && {
+        peakHourPing: { lte: maxPing }
+      }),
+      ...(maxPacketLoss && {
+        peakHourPacketLoss: { lte: maxPacketLoss }
+      })
+    }
+
+    // Determine sort order
+    const orderBy = (() => {
+      switch (sortBy) {
+        case "helpful":
+          return { helpfulCount: "desc" as const }
+        case "rating":
+          return { rating: "desc" as const }
+        case "peakRating":
+          return { peakHourRating: "desc" as const }
+        default:
+          return { createdAt: "desc" as const }
+      }
+    })()
+
+    const reviews = await prisma.apartmentReview.findMany({
+      where,
+      orderBy,
+      include: {
+        user: {
+          select: {
+            name: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({ reviews })
+  } catch (error) {
+    console.error("Failed to fetch reviews:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
+      { status: 500 }
+    )
+  }
+}
 
 export async function POST(
   request: Request,
@@ -24,7 +119,15 @@ export async function POST(
       internetRating,
       comment,
       pros,
-      cons
+      cons,
+      peakHourRating,
+      peakHourComment,
+      peakHourStart,
+      peakHourEnd,
+      peakHourDownloadSpeed,
+      peakHourUploadSpeed,
+      peakHourPing,
+      peakHourPacketLoss
     } = await request.json()
 
     // Validate required fields
@@ -58,8 +161,17 @@ export async function POST(
         comment,
         pros,
         cons,
-        verified: false, // This could be updated later based on verification process
-        helpfulCount: 0
+        verified: false,
+        helpfulCount: 0,
+        // Peak Hour Data
+        peakHourRating,
+        peakHourComment,
+        peakHourStart,
+        peakHourEnd,
+        peakHourDownloadSpeed,
+        peakHourUploadSpeed,
+        peakHourPing,
+        peakHourPacketLoss
       },
       include: {
         user: {
@@ -69,45 +181,15 @@ export async function POST(
         }
       }
     })
+
+    // Update complex badges
+    await updateComplexBadges(complexId)
 
     return NextResponse.json({ review })
   } catch (error) {
     console.error("Failed to submit review:", error)
     return NextResponse.json(
       { error: "Failed to submit review" },
-      { status: 500 }
-    )
-  }
-}
-
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id: complexId } = params
-
-    const reviews = await prisma.apartmentReview.findMany({
-      where: {
-        complexId
-      },
-      include: {
-        user: {
-          select: {
-            name: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    return NextResponse.json({ reviews })
-  } catch (error) {
-    console.error("Failed to fetch reviews:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch reviews" },
       { status: 500 }
     )
   }
