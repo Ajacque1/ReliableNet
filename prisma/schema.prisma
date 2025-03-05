@@ -78,11 +78,34 @@ model ISPReview {
   updatedAt   DateTime
   helpful     Int        @default(0)
   notHelpful  Int        @default(0)
+  
+  // New fields for detailed ratings
+  speedRating        Int
+  reliabilityRating  Int
+  valueRating        Int
+  supportRating      Int
+  installationRating Int?
+  
+  // Verification and moderation
+  isVerified        Boolean   @default(false)
+  verificationDate  DateTime?
+  verificationProof String?   // URL to proof document/screenshot
+  moderationStatus  String    @default("pending") // pending, approved, rejected
+  moderationDate    DateTime?
+  moderationReason  String?
+  moderatorId       String?
+  
+  // Photo evidence
+  photos            String[]  // Array of photo URLs
+  
+  // Relations
   ISPMetrics  ISPMetrics @relation(fields: [ispMetricId], references: [id])
   User        User       @relation(fields: [userId], references: [id])
+  moderator   User?      @relation("ModeratedReviews", fields: [moderatorId], references: [id])
 
   @@index([ispMetricId])
   @@index([userId])
+  @@index([moderationStatus])
   @@map("ISPReview")
   @@schema("public")
 }
@@ -113,6 +136,8 @@ model User {
   password        String
   notifications   Json             @default("{\"speedTestReminders\": false, \"newReviews\": false, \"ispUpdates\": false}")
   createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isModerator     Boolean          @default(false)
   speedTests      SpeedTest[]
   apartmentReviews ApartmentReview[]
   flaggedReviews   ApartmentReview[] @relation("FlaggedBy")
@@ -121,6 +146,7 @@ model User {
   sentMessages    Message[]        @relation("SentMessages")
   conversations   UserConversation[]
   ispReviews      ISPReview[]
+  moderatedReviews ISPReview[]     @relation("ModeratedReviews")
 
   @@schema("public")
 }
