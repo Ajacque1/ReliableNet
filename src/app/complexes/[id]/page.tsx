@@ -13,7 +13,7 @@ interface Props {
   }
 }
 
-export default async function ComplexDetailPage({ params }: Props) {
+export default function ComplexDetailPage({ params }: Props) {
   const router = useRouter()
   const { toast } = useToast()
   const [complex, setComplex] = useState<any>(null)
