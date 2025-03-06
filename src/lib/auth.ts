@@ -1,8 +1,8 @@
-import { NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import CredentialsProvider from "next-auth/providers/credentials"
+import type { NextAuthConfig } from "next-auth"
+import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import NextAuth from "next-auth"
 
 declare module "next-auth" {
   interface Session {
@@ -14,10 +14,9 @@ declare module "next-auth" {
   }
 }
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+export const authConfig = {
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "text" },
@@ -35,11 +34,14 @@ export const authOptions: NextAuthOptions = {
             }
           })
 
-          if (!user) {
+          if (!user || !user.password) {
             throw new Error('User not found')
           }
 
-          const passwordMatch = await bcrypt.compare(credentials.password, user.password)
+          const passwordMatch = await bcrypt.compare(
+            credentials.password as string,
+            user.password as string
+          )
 
           if (!passwordMatch) {
             throw new Error('Invalid password')
@@ -58,7 +60,7 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session?.user) {
         session.user.id = token.sub!
       }
@@ -68,7 +70,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt"
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET as string,
   pages: {
     signIn: "/auth/login",
     error: "/auth/error",
@@ -84,4 +86,6 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
-} 
+} satisfies NextAuthConfig
+
+export const { auth, signIn, signOut } = NextAuth(authConfig) 

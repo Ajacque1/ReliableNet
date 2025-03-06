@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 interface SpeedTest {
   id: string
@@ -18,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session) {
       return NextResponse.json(
         { error: "Authentication required" },

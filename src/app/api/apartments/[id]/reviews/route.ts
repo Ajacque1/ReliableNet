@@ -1,14 +1,13 @@
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session) {
       return NextResponse.json(
         { error: "Authentication required" },
@@ -16,14 +15,15 @@ export async function POST(
       )
     }
 
-    const { id: complexId } = params
+    const { id } = params
+    const body = await request.json()
     const {
       rating,
       internetRating,
       comment,
       pros,
       cons
-    } = await request.json()
+    } = body
 
     // Validate required fields
     if (!rating || !internetRating || !comment) {
@@ -37,7 +37,7 @@ export async function POST(
     const { data: complex, error: complexError } = await supabase
       .from("ApartmentComplex")
       .select("id")
-      .eq("id", complexId)
+      .eq("id", id)
       .single()
 
     if (complexError || !complex) {
@@ -51,7 +51,7 @@ export async function POST(
     const { data: review, error: reviewError } = await supabase
       .from("ApartmentReview")
       .insert([{
-        complexId,
+        complexId: id,
         userId: session.user.id,
         rating,
         internetRating,
@@ -84,7 +84,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: complexId } = params
+    const { id } = params
 
     const { data: reviews, error } = await supabase
       .from("ApartmentReview")
@@ -92,7 +92,7 @@ export async function GET(
         *,
         user:users(name)
       `)
-      .eq("complexId", complexId)
+      .eq("complexId", id)
       .order("createdAt", { ascending: false })
 
     if (error) throw error

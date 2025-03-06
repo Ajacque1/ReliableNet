@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 
 interface SpeedTestData {
   downloadSpeed: number
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     // Get user session if available
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     // Get ISP information
     const ispResponse = await fetch('http://ip-api.com/json?fields=66842623')

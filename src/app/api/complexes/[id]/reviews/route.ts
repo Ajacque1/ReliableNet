@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { updateComplexBadges } from "@/lib/badges"
 
 export const dynamic = 'force-dynamic'
@@ -11,6 +10,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth()
+    if (!session) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
     const { id: complexId } = params
     const { searchParams } = new URL(request.url)
 
@@ -105,7 +112,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session) {
       return NextResponse.json(
         { error: "Authentication required" },

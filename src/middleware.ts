@@ -1,38 +1,27 @@
-import { withAuth } from "next-auth/middleware"
+import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Export the middleware with both auth checks
-export default withAuth(
-  async function middleware(req) {
-    const token = req.nextauth.token
-    const isAdmin = token?.role === "admin"
+export default auth((req: NextRequest) => {
+  const isLoggedIn = !!req.auth
+  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  const isApiRoute = req.nextUrl.pathname.startsWith('/api')
 
-    // Protect admin routes
-    if (req.nextUrl.pathname.startsWith("/admin") && !isAdmin) {
-      return NextResponse.redirect(new URL("/auth/login", req.url))
+  if (isAuthPage) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
-
     return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-    pages: {
-      signIn: '/auth/login',
-    },
   }
-)
 
-// Update the matcher to include all protected routes
+  if (!isLoggedIn && !isApiRoute) {
+    return NextResponse.redirect(new URL('/auth/login', req.url))
+  }
+
+  return NextResponse.next()
+})
+
+// Optionally, don't invoke Middleware on some paths
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/speed-test/history/:path*',
-    '/settings/:path*',
-    '/api/protected/:path*',
-    '/admin/:path*',
-    '/api/admin/:path*'
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 } 

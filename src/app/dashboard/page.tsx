@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
 import { SpeedTestHistory } from "@/components/SpeedTestHistory"
 import { SavedComparisons } from "@/components/SavedComparisons"
 import { FavoriteComplexes } from "@/components/FavoriteComplexes"
@@ -11,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Activity, Star, BookmarkCheck, Settings } from "lucide-react"
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
 
   if (!session) {
     redirect("/auth/login")
