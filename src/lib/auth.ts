@@ -2,7 +2,6 @@ import type { NextAuthConfig } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import NextAuth from "next-auth"
 
 declare module "next-auth" {
   interface Session {
@@ -86,6 +85,4 @@ export const authConfig = {
       },
     },
   },
-} satisfies NextAuthConfig
-
-export const { auth, signIn, signOut } = NextAuth(authConfig) 
+} satisfies NextAuthConfig 
