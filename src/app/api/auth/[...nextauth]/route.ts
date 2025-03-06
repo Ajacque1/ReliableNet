@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server"
-import { auth } from "@/lib/auth"
+import { handleAuth } from "next-auth/next"
+import { authConfig } from "@/lib/auth"
 
-const handler = auth
+export const runtime = "nodejs"
 
-export const GET = handler
-export const POST = handler 
+export async function GET(request: NextRequest) {
+  return handleAuth(request, authConfig)
+}
+
+export async function POST(request: NextRequest) {
+  return handleAuth(request, authConfig)
+} 
