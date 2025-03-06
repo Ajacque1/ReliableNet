@@ -1,7 +1,9 @@
+import { auth } from "@/auth"
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { v4 as uuidv4 } from "uuid"
+
+export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   try {

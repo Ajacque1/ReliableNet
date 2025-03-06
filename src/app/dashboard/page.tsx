@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { SpeedTestHistory } from "@/components/SpeedTestHistory"
 import { SavedComparisons } from "@/components/SavedComparisons"
@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Star, BookmarkCheck, Settings } from "lucide-react"
+
+export const runtime = "nodejs"
 
 export default async function DashboardPage() {
   const session = await auth()
